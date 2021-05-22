@@ -1,0 +1,14 @@
+FROM node:8
+RUN mkdir -p /tmp/node_modules && chown -R 1100:node /tmp
+ADD yarn.lock /yarn.lock
+ADD package.json /package.json
+ENV NODE_PATH=/node_modules
+ENV PATH=$PATH:/node_modules/.bin
+RUN yarn
+WORKDIR /app
+USER 1100
+ADD --chown=1100:node . /app
+EXPOSE 3000
+EXPOSE 35729
+ENTRYPOINT ["/bin/bash", "/app/run.sh"]
+CMD ["start"]
