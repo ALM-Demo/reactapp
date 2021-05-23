@@ -5,6 +5,7 @@ ADD yarn.lock ./
 ADD package.json ./
 ENV NODE_PATH=/tmp/node_modules
 ENV PATH=$PATH:/tmp/node_modules/.bin
+RUN chmod -R 777 /tmp
 RUN yarn
 WORKDIR /tmp
 RUN chown -R 1100:node /tmp/node_modules/*
