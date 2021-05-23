@@ -7,10 +7,10 @@ jobs:
   create-web-app:      
     runs-on: ubuntu-latest
     env:
-      GITHUB_REPO_NAME: 'react'
+      GITHUB_REPO_NAME: 'reactapp'
       AZURE_SUBSCRIPTION: ''
       AZURE_RESOURCE_GROUP: ''
-      AZURE_DEPLOY_ENVIRONMENT: 'dev'
+      AZURE_DEPLOY_ENVIRONMENT: 'react'
       AZURE_WEB_APP_TYPE: 'node'
       AZURE_CLIENT_ID: 'b81c1a0e-887e-42ba-a1db-e3a5bbb6ce93'
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
