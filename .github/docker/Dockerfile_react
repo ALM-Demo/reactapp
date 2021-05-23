@@ -9,7 +9,6 @@ RUN yarn
 WORKDIR /tmp
 RUN chown -R 1100:node /tmp/node_modules/*
 USER 1100
-COPY --chown=1100:node . /tmp
+COPY --chown=1100:node . .
 EXPOSE 3000
-EXPOSE 35729
 CMD yarn run start 
