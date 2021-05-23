@@ -1,15 +1,18 @@
 FROM node:8
-RUN mkdir -p /tmp/node_modules && chown -R 1100:node /tmp
+RUN groupadd -g 1110 nodegroup
+RUN useradd -u 1500 nodeuser
+RUN usermod -a -G nodegroup nodeuser
 ADD yarn.lock /yarn.lock
 ADD package.json /package.json
 ENV NODE_PATH=/node_modules
 ENV PATH=$PATH:/node_modules/.bin
 RUN yarn
-WORKDIR /app
-USER 1100
-ADD . /app
-RUN chown -R 1100:node /app
+WORKDIR /tmp
+USER root
+RUN chmod -R 777 .
+USER 1110
+ADD --chown=1110:nodegroup . /tmp
 EXPOSE 3000
 EXPOSE 35729
-ENTRYPOINT ["/bin/bash", "/app/run.sh"]
+ENTRYPOINT ["/bin/bash", "/tmp/run.sh"]
 CMD ["start"]
