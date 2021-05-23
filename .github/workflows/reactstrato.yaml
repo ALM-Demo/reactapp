@@ -1,4 +1,4 @@
-name: strato deploy t
+name: strato deploy
 'on':
   push:
     paths:
