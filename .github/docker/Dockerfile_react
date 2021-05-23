@@ -7,7 +7,7 @@ ADD package.json /package.json
 ENV NODE_PATH=/node_modules
 ENV PATH=$PATH:/node_modules/.bin
 RUN yarn
-chown -R 1110:nodegroup /tmp
+RUN chown -R 1110:nodegroup /tmp
 WORKDIR /tmp
 USER root
 RUN chmod -R 777 .
