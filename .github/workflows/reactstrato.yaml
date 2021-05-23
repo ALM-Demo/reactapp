@@ -1,0 +1,82 @@
+name: strato deploy test
+'on':
+  push:
+    paths:
+    - .github/workflows/reactstrato.yaml
+jobs:
+  create-web-app:      
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REPO_NAME: 'node'
+      AZURE_SUBSCRIPTION: ''
+      AZURE_RESOURCE_GROUP: ''
+      AZURE_DEPLOY_ENVIRONMENT: 'dev'
+      AZURE_WEB_APP_TYPE: 'node'
+      AZURE_CLIENT_ID: 'b81c1a0e-887e-42ba-a1db-e3a5bbb6ce93'
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: 'c9536685-1262-420b-a94b-4f5420284680'
+      AZURE_WEB_APP_NAME_PREFIX: 'alm-app'
+      AZURE_WEB_APP_SKU: 'S1'
+      AZURE_WEB_APP_WORKERS: '4'
+      AZURE_ACR_NAME_PREFIX: 'almacr'
+      AZURE_ACR_SKU: 'Standard'
+      AZURE_ACR_ADMIN_ENABLED: true
+      STRATOSPHERE_API_URL: https://api.live.external.byp.ai
+      PROJECT_NAME: alm
+      GEOGRAPHY: us
+      OWNER_GROUP_NAME : 'grp-sec-saas-sub-lplat-test-reader'
+    steps:
+    - name: Set env
+      run: |
+        echo "AZURE_WEB_APP_SVC_PLAN=${AZURE_WEB_APP_NAME_PREFIX}-${AZURE_WEB_APP_TYPE}-${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
+        echo "AZURE_WEB_APP_NAME1=${AZURE_WEB_APP_NAME_PREFIX}-${AZURE_WEB_APP_TYPE}-${GITHUB_REPO_NAME}-${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
+        echo "AZURE_WEB_APP_NAME=${GITHUB_REPO_NAME}-${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
+        echo "AZURE_ACR_NAME1=${AZURE_ACR_NAME_PREFIX}${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
+        echo "AZURE_WEB_APP_IMAGE_NAME=${GITHUB_REPO_NAME}-${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
+    
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Login to Azure
+      run: |
+        az login --service-principal --username $AZURE_CLIENT_ID --password $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+        
+    - name: Create Azure Container Registry
+      run: |
+        curl -H "accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.ST_TOKEN }}" \
+          --request PUT \
+          --data '{"spec": {"container_registry": {"access_policies": [{"name": "spn-alm", "type": "resource"},{"name": "grp-sec-saas-sub-lplat-test-reader", "type": "group"}]}}}' \
+          ${{ env.STRATOSPHERE_API_URL }}/geographies/${{ env.GEOGRAPHY }}/projects/${{ env.PROJECT_NAME }}/resources/azure-container-registry/${{ env.AZURE_ACR_NAME1 }} > temp.json
+        echo "AZURE_ACR_NAME=$(jq -r '.status.azure.resource_name' temp.json)" >> $GITHUB_ENV
+    
+    - name: Get Timestamp
+      id: time
+      run: |
+        echo "AZURE_WEB_APP_IMAGE_TAG=$(date '+%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
+            
+    - name: Build Docker Image
+      run: |
+        sudo docker build . --file ".github/docker/Dockerfile_$AZURE_WEB_APP_TYPE" --tag "$AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG"
+        
+    - name: Tag Docker Image
+      run: |
+        sudo docker tag $AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG $AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:latest
+        
+    - name: Login to ACR
+      run: |
+        az acr login --name $AZURE_ACR_NAME
+    - name: Push Docker Images
+      run: |
+        docker push "$AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG"
+        docker push "$AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:latest"
+    - name: Create Azure Web App
+      run: |
+        curl -H "accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.ST_TOKEN }}" \
+          --request PUT \
+          --data '{"spec": {"liveness_probe": {"initial_delay_seconds": 300,"path": "/"},"enabled": true,"image": '\"${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ env.AZURE_WEB_APP_IMAGE_NAME }}:${{ env.AZURE_WEB_APP_IMAGE_TAG }}\"',"network": {"access": "external"},"authentication": {"enabled": true}}}' \
+          ${{ env.STRATOSPHERE_API_URL }}/geographies/${{ env.GEOGRAPHY }}/projects/${{ env.PROJECT_NAME }}/resources/container-web/${{ env.AZURE_WEB_APP_NAME }}
+        
