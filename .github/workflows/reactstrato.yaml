@@ -58,11 +58,11 @@ jobs:
             
     - name: Build Docker Image
       run: |
-        sudo docker build . --file ".github/docker/Dockerfile_$AZURE_WEB_APP_TYPE" --tag "$AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG"
+        docker build . --file ".github/docker/Dockerfile_$AZURE_WEB_APP_TYPE" --tag "$AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG"
         
     - name: Tag Docker Image
       run: |
-        sudo docker tag $AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG $AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:latest
+        docker tag $AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG $AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:latest
         
     - name: Login to ACR
       run: |
