@@ -1,20 +1,14 @@
-FROM node:8
-RUN mkdir -p /tmp/node_modules /tmp/node && chown -R 1100:node /tmp/node
-WORKDIR /tmp/node
-ADD yarn.lock /tmp/node
-ADD package.json /tmp/node
-ENV NODE_PATH=/tmp/node/node_modules
-ENV PATH=$PATH:/tmp/node/node_modules/.bin
-RUN yarn
-WORKDIR /tmp/node
-RUN chown -R 1100:node /tmp/node/node_modules
-RUN rm -rf /tmp/node_modules
-RUN useradd -ms /bin/bash 1100
+FROM node:10-alpine
+
+RUN mkdir -p /tmp/node_modules && chown -R 1100:node /tmp
+
+WORKDIR /tmp
+
+COPY package*.json ./
+
+RUN npm install
 USER 1100
-COPY --chown=1100:node . /tmp/node
-RUN chmod 777 /tmp/node/yarn.lock /tmp/node/run.sh /tmp/node/package.json
-RUN ls -lrt
-RUN pwd
-RUN cd /tmp/node/node_modules/ && ls -lrt
-EXPOSE 3000
-CMD yarn run start
+COPY --chown=1100:node . .
+
+EXPOSE 8080
+CMD npm run start
