@@ -14,5 +14,6 @@ COPY --chown=1100:node . /tmp
 RUN chmod 777 /tmp/yarn.lock /tmp/run.sh /tmp/package.json
 RUN ls -lrt
 RUN pwd
+RUN cd /tmp/node_modules/ && ls -lrt
 EXPOSE 3000
 CMD sh -c "cd /tmp && yarn run start"
