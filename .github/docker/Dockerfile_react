@@ -14,4 +14,4 @@ RUN useradd -ms /bin/bash 1100
 USER 1100
 COPY --chown=1100:node . /tmp
 EXPOSE 3000
-CMD cd /tmp && yarn run start 
+CMD sh -c "cd /tmp && yarn run start"
