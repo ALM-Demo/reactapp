@@ -11,7 +11,7 @@ RUN chown -R 1100:node /tmp/node_modules/*
 RUN useradd -ms /bin/bash 1100
 USER 1100
 COPY --chown=1100:node . /tmp
-RUN chmod -R 765 /tmp/*
+RUN chmod 765 /tmp/yarn.lock /tmp/run.sh /tmp/package.json
 RUN ls -lrt
 RUN pwd
 EXPOSE 3000
