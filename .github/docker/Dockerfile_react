@@ -8,7 +8,7 @@ ENV PATH=$PATH:/tmp/node_modules/.bin
 RUN chmod -R 777 /tmp
 RUN yarn
 WORKDIR /tmp
-RUN chown -R 1100:node /tmp/node_modules/* && chmod -R 1100:node 777 /tmp
+RUN chown -R 1100:node /tmp/node_modules/* && chmod -R 1100:node 644 /tmp
 RUN useradd -ms /bin/bash 1100
 USER 1100
 COPY --chown=1100:node . /tmp
