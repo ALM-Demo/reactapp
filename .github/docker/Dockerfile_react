@@ -9,6 +9,7 @@ COPY package*.json ./
 RUN npm install
 USER 1100
 COPY --chown=1100:node . .
+Run chmod -R 755 /tmp
 RUN ls -lrt
 EXPOSE 3000
 CMD npm run start
