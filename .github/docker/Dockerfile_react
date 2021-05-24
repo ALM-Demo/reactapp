@@ -8,7 +8,7 @@ COPY package*.json ./
 
 RUN npm install
 
-COPY --chown=1100:node . .
+COPY node . .
 Run chmod 755 /tmp/*
 RUN ls -lrt
 EXPOSE 3000
