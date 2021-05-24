@@ -1,13 +1,13 @@
 FROM node:10-alpine
 
 RUN mkdir -p /tmp/node_modules && chown -R 1100:node /tmp
-
+USER 1100
 WORKDIR /tmp
 
 COPY package*.json ./
 
 RUN npm install
-USER 1100
+
 COPY --chown=1100:node . .
 Run chmod 755 /tmp/*
 RUN ls -lrt
