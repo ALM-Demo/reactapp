@@ -1,19 +1,19 @@
 FROM node:8
-RUN mkdir -p /tmp/node_modules && chown -R 1100:node /tmp
-WORKDIR /tmp
+RUN mkdir -p /tmp/node_modules /tmp/node && chown -R 1100:node /tmp/node
+WORKDIR /tmp/node
 ADD yarn.lock ./
 ADD package.json ./
-ENV NODE_PATH=/tmp/node_modules
-ENV PATH=$PATH:/tmp/node_modules/.bin
+ENV NODE_PATH=/tmp/node/node_modules
+ENV PATH=$PATH:/tmp/node/node_modules/.bin
 RUN yarn
-WORKDIR /tmp
-RUN chown -R 1100:node /tmp/node_modules/*
+WORKDIR /tmp/node
+RUN chown -R 1100:node /tmp/node/node_modules/*
 RUN useradd -ms /bin/bash 1100
 USER 1100
-COPY --chown=1100:node . /tmp
-RUN /bin/bash -c 'chmod 777 /tmp/yarn.lock /tmp/run.sh /tmp/package.json'
+COPY --chown=1100:node . /tmp/node
+RUN /bin/bash -c 'chmod 777 /tmp/node/yarn.lock /tmp/node/run.sh /tmp/node/package.json'
 RUN ls -lrt
 RUN pwd
-RUN cd /tmp/node_modules/ && ls -lrt
+RUN cd /tmp/node/node_modules/ && ls -lrt
 EXPOSE 3000
-CMD /bin/bash -c "cd /tmp && yarn run start"
+CMD yarn run start
