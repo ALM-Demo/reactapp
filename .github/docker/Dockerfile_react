@@ -8,7 +8,7 @@ COPY package*.json ./
 
 RUN npm install --no-cache
 
-COPY node . .
+COPY . .
 Run chmod 755 /tmp/*
 RUN ls -lrt
 EXPOSE 3000
