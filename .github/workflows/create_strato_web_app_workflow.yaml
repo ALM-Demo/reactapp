@@ -25,7 +25,7 @@ jobs:
         echo "AZURE_WEB_APP_SVC_PLAN=${AZURE_WEB_APP_NAME_PREFIX}-${AZURE_WEB_APP_TYPE}-${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
         echo "AZURE_WEB_APP_NAME1=${AZURE_WEB_APP_NAME_PREFIX}-${AZURE_WEB_APP_TYPE}-${GITHUB_REPO_NAME}-${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
         echo "AZURE_WEB_APP_NAME=${GITHUB_REPO_NAME}-${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
-        echo "AZURE_ACR_NAME1=${AZURE_ACR_NAME_PREFIX}${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
+        echo "AZURE_ACR_NAME=${AZURE_ACR_NAME_PREFIX}${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
         echo "AZURE_WEB_APP_IMAGE_NAME=${GITHUB_REPO_NAME}-${AZURE_DEPLOY_ENVIRONMENT}" >> $GITHUB_ENV
     
     - name: Checkout Code
@@ -42,9 +42,25 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.ST_TOKEN }}" \
           --request PUT \
           --data '{"spec": {"container_registry": {"access_policies": [{"name": "spn-alm", "type": "resource"},{"name": "grp-sec-saas-sub-lplat-test-reader", "type": "group"}]}}}' \
-          ${{ env.STRATOSPHERE_API_URL }}/geographies/${{ env.GEOGRAPHY }}/projects/${{ env.PROJECT_NAME }}/resources/azure-container-registry/${{ env.AZURE_ACR_NAME1 }} > temp.json
-        echo "AZURE_ACR_NAME=$(jq -r '.status.azure.resource_name' temp.json)" >> $GITHUB_ENV
-    
+          ${{ env.STRATOSPHERE_API_URL }}/geographies/${{ env.GEOGRAPHY }}/projects/${{ env.PROJECT_NAME }}/resources/azure-container-registry/${{ env.AZURE_ACR_NAME }}
+
+        curl -H "accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.ST_TOKEN }}" \
+          --request GET \
+          ${{ env.STRATOSPHERE_API_URL }}/geographies/${{ env.GEOGRAPHY }}/projects/${{ env.PROJECT_NAME }}/resources/azure-container-registry/${{ env.AZURE_ACR_NAME }} > temp.json
+        echo "AZURE_ACR_REPO_NAME=$(jq -r '.status.azure.resource_name' temp.json)" >> $GITHUB_ENV
+        echo "AZURE_ACR_STATUS=$(jq -r '.status.state' temp.json)" >> $GITHUB_ENV  
+        for ((i = 0; i < 12; i++))
+        do
+          if [ ${{ env.AZURE_ACR_STATUS }} != "deployed" ];then
+            sleep 5
+            if [ $i == 11 ];then
+              exit 1
+            fi
+         fi
+        done   
+   
     - name: Get Timestamp
       id: time
       run: |
@@ -52,25 +68,41 @@ jobs:
             
     - name: Build Docker Image
       run: |
-        sudo docker build . --file ".github/docker/Dockerfile_$AZURE_WEB_APP_TYPE" --tag "$AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG"
+        sudo docker build . --file ".github/docker/Dockerfile_$AZURE_WEB_APP_TYPE" --tag "$AZURE_ACR_REPO_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG"
         
     - name: Tag Docker Image
       run: |
-        sudo docker tag $AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG $AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:latest
+        sudo docker tag $AZURE_ACR_REPO_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG $AZURE_ACR_REPO_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:latest
         
     - name: Login to ACR
       run: |
-        az acr login --name $AZURE_ACR_NAME
+        az acr login --name $AZURE_ACR_REPO_NAME
     - name: Push Docker Images
       run: |
-        docker push "$AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG"
-        docker push "$AZURE_ACR_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:latest"
+        docker push "$AZURE_ACR_REPO_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:$AZURE_WEB_APP_IMAGE_TAG"
+        docker push "$AZURE_ACR_REPO_NAME.azurecr.io/$AZURE_WEB_APP_IMAGE_NAME:latest"
     - name: Create Azure Web App
       run: |
         curl -H "accept: application/json" \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer ${{ secrets.ST_TOKEN }}" \
           --request PUT \
-          --data '{"spec": {"liveness_probe": {"initial_delay_seconds": 120},"enabled": true,"image": '\"${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ env.AZURE_WEB_APP_IMAGE_NAME }}:${{ env.AZURE_WEB_APP_IMAGE_TAG }}\"',"network": {"access": "external"},"authentication": {"enabled": true}}}' \
+          --data '{"spec": {"liveness_probe": {"initial_delay_seconds": 120},"enabled": true,"image": '\"${{ env.AZURE_ACR_REPO_NAME }}.azurecr.io/${{ env.AZURE_WEB_APP_IMAGE_NAME }}:${{ env.AZURE_WEB_APP_IMAGE_TAG }}\"',"network": {"access": "external"},"authentication": {"enabled": true}}}' \
           ${{ env.STRATOSPHERE_API_URL }}/geographies/${{ env.GEOGRAPHY }}/projects/${{ env.PROJECT_NAME }}/resources/container-web/${{ env.AZURE_WEB_APP_NAME }}
+
+        curl -H "accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.ST_TOKEN }}" \
+          --request GET \
+          ${{ env.STRATOSPHERE_API_URL }}/geographies/${{ env.GEOGRAPHY }}/projects/${{ env.PROJECT_NAME }}/resources/container-web/${{ env.AZURE_WEB_APP_NAME }} > temp.json
+        echo "AZURE_WEBAPP_STATUS=$(jq -r '.status.state' temp.json)" >> $GITHUB_ENV  
+        for ((i = 0; i < 60; i++))
+        do
+          if [ ${{ env.AZURE_WEBAPP_STATUS }} != "deployed" ];then
+            sleep 5
+            if [ $i == 59 ];then
+              exit 1
+            fi
+         fi
+        done
         
