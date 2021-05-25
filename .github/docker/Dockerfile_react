@@ -3,7 +3,7 @@ USER 1100
 RUN mkdir -p /tmp/node_modules
 ENV NODE_PATH=/tmp/node_modules
 ENV PATH=$PATH:/tmp/node_modules/.bin
-WORKDIR /tmp
+WORKDIR /app
 COPY package*.json ./
 RUN npm install --no-cache
 COPY --chown=1100:1100 . .
