@@ -15,7 +15,7 @@ jobs:
       AZURE_CLIENT_ID: "${{ github.event.client_payload.client_id }}"
       AZURE_CLIENT_SECRET: "${{ github.event.client_payload.client_secret }}"
       AZURE_TENANT_ID: "${{ github.event.client_payload.tenant_id }}"
-      AZURE_STORAGE_ACCOUNT_NAME: "${{ github.event.client_payload.tenant_id }}"
+      AZURE_STORAGE_ACCOUNT_NAME: "${{ github.event.client_payload.storage_account_name }}"
       AZURE_FUNCTION_APP_NAME_PREFIX: 'alm-func'
       AZURE_STORAGE_ACCOUNT_NAME_PREFIX: 'almst'
       AZURE_STORAGE_ACCOUNT_SKU: 'Standard_LRS'
